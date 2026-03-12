@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Проверка местоположения</title>
+</head>
+
+<body>
+
+<h2>Проверка местоположения...</h2>
+
+<script>
+
+const officeLat = 43.238949;   // 51.132768,
+const officeLon = 76.889709;   // 71.375795
+const allowedRadius = 100;     // 100
+
+function getDistance(lat1, lon1, lat2, lon2) {
+
+const R = 6371e3;
+const φ1 = lat1 * Math.PI/180;
+const φ2 = lat2 * Math.PI/180;
+const Δφ = (lat2-lat1) * Math.PI/180;
+const Δλ = (lon2-lon1) * Math.PI/180;
+
+const a =
+Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+Math.cos(φ1) * Math.cos(φ2) *
+Math.sin(Δλ/2) * Math.sin(Δλ/2);
+
+const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+return R * c;
+}
+
+navigator.geolocation.getCurrentPosition(function(position){
+
+const userLat = position.coords.latitude;
+const userLon = position.coords.longitude;
+
+const distance = getDistance(userLat, userLon, officeLat, officeLon);
+
+if(distance <= allowedRadius){
+
+window.location.href="https://docs.google.com/forms/d/e/1FAIpQLSfn6TWniRoqsc_MgmLC8CG3LFYOe0Pm_dMYCZG2LwaksJe2OA/viewform?usp=dialog";
+
+}else{
+
+document.body.innerHTML="<h2>Вы не находитесь рядом с офисом</h2>";
+
+}
+
+});
+
+</script>
+
+</body>
+</html>
