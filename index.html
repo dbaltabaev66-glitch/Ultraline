@@ -1,58 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Проверка местоположения</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Проверка местоположения</title>
 </head>
-
 <body>
+  <h2 id="status">Проверка местоположения...</h2>
 
-<h2>Проверка местоположения...</h2>
+  <script>
+    const officeLat = 43.238949;
+    const officeLon = 76.889709;
+    const allowedRadius = 100;
+    const targetUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfn6TWniRoqsc_MgmLC8CG3LFYOe0Pm_dMYCZG2LwaksJe2OA/viewform?usp=sharing&ouid=111115736308338925271";
 
-<script>
+    const statusEl = document.getElementById("status");
 
-const officeLat = 51.132768;   // 
-const officeLon = 71.375795;   // 
-const allowedRadius = 100;     // 100
+    function getDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371e3;
+      const phi1 = lat1 * Math.PI / 180;
+      const phi2 = lat2 * Math.PI / 180;
+      const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+      const deltaLambda = (lon2 - lon1) * Math.PI / 180;
 
-function getDistance(lat1, lon1, lat2, lon2) {
+      const a =
+        Math.sin(deltaPhi / 2) ** 2 +
+        Math.cos(phi1) * Math.cos(phi2) *
+        Math.sin(deltaLambda / 2) ** 2;
 
-const R = 6371e3;
-const φ1 = lat1 * Math.PI/180;
-const φ2 = lat2 * Math.PI/180;
-const Δφ = (lat2-lat1) * Math.PI/180;
-const Δλ = (lon2-lon1) * Math.PI/180;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
 
-const a =
-Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-Math.cos(φ1) * Math.cos(φ2) *
-Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    function showError(message) {
+      statusEl.textContent = message;
+    }
 
-const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    if (!("geolocation" in navigator)) {
+      showError("Ваш браузер не поддерживает геолокацию.");
+    } else {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLat = position.coords.latitude;
+          const userLon = position.coords.longitude;
 
-return R * c;
-}
+          const distance = getDistance(userLat, userLon, officeLat, officeLon);
 
-navigator.geolocation.getCurrentPosition(function(position){
-
-const userLat = position.coords.latitude;
-const userLon = position.coords.longitude;
-
-const distance = getDistance(userLat, userLon, officeLat, officeLon);
-
-if(distance <= allowedRadius){
-
-window.location.href="https://docs.google.com/forms/d/e/1FAIpQLSfn6TWniRoqsc_MgmLC8CG3LFYOe0Pm_dMYCZG2LwaksJe2OA/viewform?usp=sharing&ouid=111115736308338925271";
-
-}else{
-
-document.body.innerHTML="<h2>Вы не находитесь рядом с офисом</h2>";
-
-}
-
-});
-
-</script>
-
+          if (distance <= allowedRadius) {
+            window.location.replace(targetUrl);
+          } else {
+            showError("Вы не находитесь рядом с офисом.");
+          }
+        },
+        (error) => {
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              showError("Доступ к геолокации запрещён.");
+              break;
+            case error.POSITION_UNAVAILABLE:
+              showError("Не удалось определить местоположение.");
+              break;
+            case error.TIMEOUT:
+              showError("Истекло время ожидания геолокации.");
+              break;
+            default:
+              showError("Произошла ошибка при получении геолокации.");
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    }
+  </script>
 </body>
 </html>
