@@ -3,77 +3,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Проверка местоположения</title>
+  <title>Проверка доступа</title>
 </head>
 <body>
-  <h2 id="status">Проверка местоположения...</h2>
+  <h2 id="status">Проверка доступа...</h2>
 
   <script>
-    const officeLat = 43.238949;
-    const officeLon = 76.889709;
-    const allowedRadius = 100;
-    const targetUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfn6TWniRoqsc_MgmLC8CG3LFYOe0Pm_dMYCZG2LwaksJe2OA/viewform?usp=sharing&ouid=111115736308338925271";
+    // Ссылка на Google Form
+    const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfn6TWniRoqsc_MgmLC8CG3LFYOe0Pm_dMYCZG2LwaksJe2OA/viewform?usp=dialog";
+
+    // Разрешённые внешние IP-адреса
+    const allowedIPs = [
+      "46.8.151.243"
+
+    ];
 
     const statusEl = document.getElementById("status");
 
-    function getDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371e3;
-      const phi1 = lat1 * Math.PI / 180;
-      const phi2 = lat2 * Math.PI / 180;
-      const deltaPhi = (lat2 - lat1) * Math.PI / 180;
-      const deltaLambda = (lon2 - lon1) * Math.PI / 180;
-
-      const a =
-        Math.sin(deltaPhi / 2) ** 2 +
-        Math.cos(phi1) * Math.cos(phi2) *
-        Math.sin(deltaLambda / 2) ** 2;
-
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    }
-
-    function showError(message) {
-      statusEl.textContent = message;
-    }
-
-    if (!("geolocation" in navigator)) {
-      showError("Ваш браузер не поддерживает геолокацию.");
-    } else {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const userLat = position.coords.latitude;
-          const userLon = position.coords.longitude;
-
-          const distance = getDistance(userLat, userLon, officeLat, officeLon);
-
-          if (distance <= allowedRadius) {
-            window.location.replace(targetUrl);
-          } else {
-            showError("Вы не находитесь рядом с офисом.");
-          }
-        },
-        (error) => {
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              showError("Доступ к геолокации запрещён.");
-              break;
-            case error.POSITION_UNAVAILABLE:
-              showError("Не удалось определить местоположение.");
-              break;
-            case error.TIMEOUT:
-              showError("Истекло время ожидания геолокации.");
-              break;
-            default:
-              showError("Произошла ошибка при получении геолокации.");
-          }
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
+    fetch("https://api.ipify.org?format=json")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Не удалось получить IP");
         }
-      );
-    }
+        return response.json();
+      })
+      .then((data) => {
+        const userIP = data.ip;
+
+        if (allowedIPs.includes(userIP)) {
+          statusEl.textContent = "Доступ разрешён. Переход к форме...";
+          window.location.replace(formUrl);
+        } else {
+          statusEl.innerHTML =
+            "Доступ разрешён только из офисной сети.<br>Ваш внешний IP: " + userIP;
+        }
+      })
+      .catch((error) => {
+        statusEl.textContent = "Ошибка проверки IP: " + error.message;
+      });
   </script>
 </body>
 </html>
